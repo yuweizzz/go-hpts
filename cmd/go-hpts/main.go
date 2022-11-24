@@ -211,16 +211,16 @@ func main() {
 
 	verbose := flag.Bool("v", false, "should every proxy request be logged to stdout")
 	socks5Server := flag.String("s", "socks5://127.0.0.1:8888", "socks5 server url")
-	addr := flag.String("addr", ":6699", "http proxy listen address")
+	port := flag.String("p", "6699", "http proxy listen port")
 	flag.Parse()
 
 	Verbose = *verbose
 	Socks5Server = *socks5Server
 
-	log.Printf("Listening %s \n", *addr)
+	log.Printf("Listen Port: %s \n", *port)
 
 	server := &http.Server{
-		Addr: *addr,
+		Addr: ":" + *port,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if ifHttpRequest(r.URL.Scheme) {
 				HandleHttp(w, r)
