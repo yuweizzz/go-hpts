@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -120,7 +119,18 @@ func Socks5Handshake(r *http.Request) (net.Conn, error) {
 		return nil, errConnection
 	}
 	if Verbose {
-		fmt.Print(read_buf)
+		switch read_buf[3] {
+		case Socks5IP6:
+			// ipv6 = 16 * 8bit = 128
+			ip := net.IP(read_buf[4 : 4+16])
+			port := int(read_buf[4+16])<<8 + int(read_buf[4+16+1])
+			log.Printf("Socks Server Replies @ [%s]:%d \n", ip.String(), port)
+		case Socks5IP4:
+			// ipv4 = 4 * 8bit = 32
+			ip := net.IP(read_buf[4 : 4+4])
+			port := int(read_buf[4+4])<<8 + int(read_buf[4+4+1])
+			log.Printf("Socks Server Replies @ %s:%d \n", ip.String(), port)
+		}
 	}
 	return dest_conn, nil
 }
