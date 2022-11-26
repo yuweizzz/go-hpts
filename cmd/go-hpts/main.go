@@ -77,10 +77,11 @@ func Socks5Handshake(r *http.Request) (net.Conn, error) {
 		write_buf = append(write_buf, SocksVer5)
 		write_buf = append(write_buf, uint8(len(username)))
 		write_buf = append(write_buf, username...)
-		if flag {
-			write_buf = append(write_buf, uint8(len(password)))
-			write_buf = append(write_buf, password...)
+		if !flag {
+			return nil, errServerEntry
 		}
+		write_buf = append(write_buf, uint8(len(password)))
+		write_buf = append(write_buf, password...)
 		dest_conn.Write(write_buf)
 		io.ReadAtLeast(dest_conn, read_buf, 2)
 		if read_buf[1] != 0 {
@@ -141,7 +142,7 @@ func HandleHttp(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := url.Parse(Socks5Server)
 	if err != nil {
-		log.Printf("Error on Http Request @ %s : %s \n", r.Host, err.Error())
+		log.Printf("Error on Http Request @ %s: %s \n", r.Host, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -155,7 +156,7 @@ func HandleHttp(w http.ResponseWriter, r *http.Request) {
 	}
 	response, err := ProxyTransport.RoundTrip(r)
 	if err != nil {
-		log.Printf("Error on Http Request @ %s : %s \n", r.Host, err.Error())
+		log.Printf("Error on Http Request @ %s: %s \n", r.Host, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -175,25 +176,25 @@ func HandleHttps(w http.ResponseWriter, r *http.Request) {
 	}
 	dest_conn, err := Socks5Handshake(r)
 	if err != nil {
-		log.Printf("Error on Https Request @ %s : %s \n", r.Host, err.Error())
+		log.Printf("Error on Https Request @ %s: %s \n", r.Host, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
-		log.Printf("Error on Https Request @ %s : %s \n", r.Host, err.Error())
+		log.Printf("Error on Https Request @ %s: %s \n", r.Host, err.Error())
 		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
 		return
 	}
 	client_conn, _, err := hijacker.Hijack()
 	if err != nil {
-		log.Printf("Error on Https Request @ %s : %s \n", r.Host, err.Error())
+		log.Printf("Error on Https Request @ %s: %s \n", r.Host, err.Error())
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 	_, err = io.WriteString(client_conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
 	if err != nil {
-		log.Printf("Error on Https Request @ %s : %s \n", r.Host, err.Error())
+		log.Printf("Error on Https Request @ %s: %s \n", r.Host, err.Error())
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
